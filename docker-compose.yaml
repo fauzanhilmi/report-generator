@@ -36,8 +36,8 @@ services:
       - "3000:3000"
     volumes:
       - .:/app
-    # command: ["node", "index.js"]
-    command: ["npx", "nodemon", "--legacy-watch", "--ext", "js,json", "--watch", ".", "index.js"]
+    command: ["node", "index.js"]
+    # command: ["npx", "nodemon", "--legacy-watch", "--ext", "js,json", "--watch", ".", "index.js"]
   
   scheduler-job:
     build: .
@@ -50,8 +50,8 @@ services:
       MONGO_URL: mongodb://user:password@mongodb:27017/reportsdb?authSource=admin
     volumes:
       - .:/app
-    # command: ["node", "./jobs/reportSchedulerJob.js"]
-    command: ["npx", "nodemon", "--legacy-watch", "./jobs/reportSchedulerJob.js"]
+    command: ["node", "./jobs/reportSchedulerJob.js"]
+    # command: ["npx", "nodemon", "--legacy-watch", "./jobs/reportSchedulerJob.js"]
   generator-worker:
     build: .
     # container_name: "generator-worker"
@@ -63,8 +63,8 @@ services:
       MONGO_URL: mongodb://user:password@mongodb:27017/reportsdb?authSource=admin
     volumes:
       - .:/app
-    # command: ["node", "./workers/reportGenerationWorker.js"]
-    command: ["npx", "nodemon", "--legacy-watch", "./workers/reportGenerationWorker.js"]
+    command: ["node", "./workers/reportGenerationWorker.js"]
+    # command: ["npx", "nodemon", "--legacy-watch", "./workers/reportGenerationWorker.js"]
 
 volumes:
   rabbitmq_data:

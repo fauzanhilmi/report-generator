@@ -89,4 +89,5 @@ Running multiple instances introduces risks of race conditions and concurrency i
 
 ### **Performance & Scalability**  
   - Create database indexes for faster data retrieval.  
-  - Add a load balancer to distribute traffic across multiple API instances.  
+  - Create Mongo replica sets for better availability & fault tolerance.
+  - Add a load balancer to distribute traffic across multiple API instances.
