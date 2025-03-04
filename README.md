@@ -6,15 +6,35 @@
 ### **API** 
 - `POST /reports`
   - Creates a new report. If a `scheduledTime` is provided, the report is scheduled; otherwise, it is processed immediately.
-  - Request Body:
+  - Returns `400` if `scheduledTime` is in wrong format
+  - Example: `curl -X POST http://localhost:3000/reports -H "Content-Type: application/json" --data-raw '{}'`
+  - Request body with scheduled time:
     ```json
     {
         "scheduledTime": "2025-03-10T12:00:00.000Z"  // (optional) ISO 8601 format
     }
+  - Response:
+    ```json
+    {
+        "updatedAt":null,
+        "status":"SCHEDULED",
+        "scheduledTime":"2025-03-04T16:35:22.000Z",
+        "content":null,
+        "_id":"67c72b8eb868a8ddf20daa9d",
+        "createdAt":"2025-03-04T16:34:22.350Z",
+        "__v":0
+    }
+  
 - `GET /reports/:id`
   - Retrieves details of a specific report (including its status) by its ID.
+  - Response format is same as POST.
+  - Returns `404` if report is not found.
+  - Example: `curl -X GET http://localhost:3000/reports/67c728fcb868a8ddf20daa89`
 - `DELETE /reports/:id`
   - Cancels a pending report.
+  - Response format is same as POST and GET.
+  - Returns `404` if report is not found (either ID is wrong or report is already canceled / completed).
+  - Example: `curl -X DELETE http://localhost:3000/reports/67c728fcb868a8ddf20daa89`
 
 ### **Report Status** 
 - `REQUESTED` - The report request has been received but has not yet been scheduled or processed. This status is assigned when a report is created **without** a scheduled time.
@@ -45,7 +65,7 @@ The application runs inside **Docker Compose**, orchestrating multiple services 
 5. **RabbitMQ** – Manages the event queue for processing reports.
 
 Advantages of this architecture:
-- **Permanent Storage** - Storing data on disk ensures that reports persist across restarts and failures.
+- **Persistent Storage** - Storing data on disk ensures that reports persist across restarts and failures.
 - **Scalability** – API, worker, and cron jobs run in separate containers, making it easy to scale independently.
 - **Fault Tolerance** – If one component (e.g., API or worker) crashes, others continue working. Also, RabbitMQ ensures messages aren’t lost in case of worker failure with durable queue.
 - **Containerized Deployment** – Docker Compose simplifies running and managing all services in a reproducible environment.
@@ -56,7 +76,7 @@ Docker Compose makes it easy to run multiple instances of a service. For example
 Running multiple instances introduces risks of race conditions and concurrency issues, which must be handled carefully to ensure data consistency and prevent conflicts.
 
 - **Scaling the API Server**
-  - `POST /reports` and `GET /reports/:id` are safe from concurrency issues due because they do not perform any updates on existing reports.
+  - `POST /reports` and `GET /reports/:id` are safe from concurrency issues because they do not perform any updates on existing reports.
   - `DELETE /reports/:id` can have concurrency risks if multiple users try to delete the same report. This problem is avoided by using MongoDB's atomic operation `findOneAndUpdate`.
   - A load balancer (e.g., Nginx, HAProxy) is needed to distribute requests among the API instances. Currently it is not  yet implemented.
 - **Scaling the Cron Job**
@@ -71,7 +91,7 @@ Running multiple instances introduces risks of race conditions and concurrency i
   - Move business logics (e.g., `scheduledTime` validation) from controllers to a separate utility file. Controllers should be thin and dumb. Then, write unit tests for the extracted logic.
   - Create a **DAO (Data Access Object)** layer to handle database interactions. This leads to a more modular codebase and makes switching databases easier in the future.
   - Store report statuses in a single enum throughout the codebase for better maintainability. 
-  - Restructure to have only three top-level folders:  
+  - Refactor folders structure:  
     - `api/` → Express backend  
     - `workers/` → Queue workers  
     - `jobs/` → Cron jobs
@@ -79,6 +99,7 @@ Running multiple instances introduces risks of race conditions and concurrency i
 
 ### **Security & Best Practices**  
 - Move sensitive credentials (MongoDB, RabbitMQ, etc.) to `.env` file.  
+- Authenticate API calls.
 - Implement proper username / password authentication for MongoDB & RabbitMQ.  
 - Validate all API request bodies properly before processing.
 - Refactor the response body to exclude unnecessary MongoDB fields to make it more user-friendly.
