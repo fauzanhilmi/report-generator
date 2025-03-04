@@ -4,34 +4,39 @@ const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://user:password@rabbitmq"
 let connection = null;
 let channel = null;
 
-async function getConnection() {
-  try {
-    console.log(`Connection is ${connection}`)
-    if (connection) return connection
-    
-    // Create connection if not existing
-    connection = await amqp.connect(RABBITMQ_URL);
-    console.log("RabbitMQ connection created")
+async function getConnection(retries = 5, delay = 5000) {
+  // Retry until RabbitMQ is ready
+  while (retries > 0) {
+    try {
+      if (connection) return connection;
 
-    connection.on("close", () => {
-      console.error("RabbitMQ connection closed.");
-      connection = null;
-    });
-    
-    connection.on("error", (error) => {
-      console.error("RabbitMQ connection error: ", error)
-      connection = null;
-    });
+      // Create connection if not existing
+      connection = await amqp.connect(RABBITMQ_URL);
+      console.log("RabbitMQ connection created");
 
-    return connection
-  } catch (error) {
-    console.error("Failed to connect to RabbitMQ: ", error)
-    process.exit(1)
+      connection.on("close", () => {
+        console.error("RabbitMQ connection closed.");
+        connection = null;
+      });
+
+      connection.on("error", (error) => {
+        console.error("RabbitMQ connection error: ", error);
+        connection = null;
+      });
+
+      return connection;
+    } catch (error) {
+      console.error(`Failed to connect to RabbitMQ. Retries left: ${retries - 1}. Error: ${error}`);
+      retries--;
+      await new Promise((res) => setTimeout(res, delay));
+    }
   }
+
+  console.error("RabbitMQ is not available");
+  process.exit(1);
 }
 
 async function getChannel() {
-  console.log(`Channel is ${channel}`)
   if (channel) return channel
 
   // Create channel if not existing
