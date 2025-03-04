@@ -95,6 +95,7 @@ Running multiple instances introduces risks of race conditions and concurrency i
     - `api/` → Express backend  
     - `workers/` → Queue workers  
     - `jobs/` → Cron jobs
+    
     then also split them into different Docker projects.
 
 ### **Security & Best Practices**  
