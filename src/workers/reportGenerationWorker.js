@@ -40,7 +40,7 @@ async function generateReport(data) {
     await new Promise((resolve) => setTimeout(resolve, 5000)); // Simulated 5s processing delay
 
     const updatedReport = await Report.findOneAndUpdate(
-      { _id: data._id, status: "QUEUED" }, // If report is already canceled, it won't get processed. Also avoid double processing on multi-instances
+      { _id: data._id, status: "QUEUED" }, // If report is already canceled, it won't get processed
       { status: "COMPLETED", content: generateTabularData(), updatedAt: new Date() },
       { new: true }
     );
