@@ -57,7 +57,7 @@ exports.cancelReport = async (req, res) => {
     );
 
     if (!report) {
-      return res.status(400).json({ message: "Cannot find pending report with given id" });
+      return res.status(404).json({ message: "Cannot find pending report with given id" });
     }
 
     res.json(report);
