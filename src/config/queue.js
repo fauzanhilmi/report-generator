@@ -1,24 +1,28 @@
 const amqp = require("amqplib");
 const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://user:password@rabbitmq";
 
-let connection, channel;
+let connection = null;
+let channel = null;
 
 async function getConnection() {
   try {
-    if (!connection) { // Create connection if not existing
-      connection = await amqp.connect(RABBITMQ_URL);
-      console.log("RabbitMQ connection created")
-  
-      connection.on("close", () => {
-        console.error("RabbitMQ connection closed.");
-        connection = null;
-      });
-      
-      connection.on("error", (error) => {
-        console.error("RabbitMQ connection error: ", error)
-        connection = null;
-      });
-    }
+    console.log(`Connection is ${connection}`)
+    if (connection) return connection
+    
+    // Create connection if not existing
+    connection = await amqp.connect(RABBITMQ_URL);
+    console.log("RabbitMQ connection created")
+
+    connection.on("close", () => {
+      console.error("RabbitMQ connection closed.");
+      connection = null;
+    });
+    
+    connection.on("error", (error) => {
+      console.error("RabbitMQ connection error: ", error)
+      connection = null;
+    });
+
     return connection
   } catch (error) {
     console.error("Failed to connect to RabbitMQ: ", error)
@@ -27,22 +31,25 @@ async function getConnection() {
 }
 
 async function getChannel() {
+  console.log(`Channel is ${channel}`)
+  if (channel) return channel
+
+  // Create channel if not existing
   const conn = await getConnection();
   try {
-    if (!channel) { // Create channel if not existing
-      channel = await conn.createChannel();
-      console.log("RabbitMQ channel created")
-      
-      channel.on("error", (error) => {
-        console.error("RabbitMQ channel error:", error);
-        channel = null;
-      });
-  
-      channel.on("close", () => {
-        console.log("RabbitMQ channel closed");
-        channel = null;
-      });
-    }
+    channel = await conn.createChannel();
+    console.log("RabbitMQ channel created")
+    
+    channel.on("error", (error) => {
+      console.error("RabbitMQ channel error:", error);
+      channel = null;
+    });
+
+    channel.on("close", () => {
+      console.log("RabbitMQ channel closed");
+      channel = null;
+    });
+
     return channel
   } catch (error) {
     console.error("Failed to create RabbitMQ channel: ", error);
@@ -52,7 +59,7 @@ async function getChannel() {
 
 async function publishToQueue(queueName, message) {
   try {
-    const channel = await getChannel();
+    channel = await getChannel();
     await channel.assertQueue(queueName, { durable: true });
     channel.sendToQueue(queueName, Buffer.from(message), { persistent: true });
     console.log(`Sent to ${queueName}:`, message);
@@ -62,7 +69,7 @@ async function publishToQueue(queueName, message) {
 }
 
 async function consumeFromQueue(queueName, callback) {
-  const channel = await getChannel();
+  channel = await getChannel();
   await channel.assertQueue(queueName, { durable: true });
 
   channel.consume(queueName, async (msg) => {
