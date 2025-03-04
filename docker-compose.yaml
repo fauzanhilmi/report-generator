@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    container_name: "rabbitmq"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  mongodb:
+    image: "mongo:7"
+    container_name: "mongodb"
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: password
+
+  app:
+    build: .
+    # container_name: "express-app"
+    depends_on:
+      - rabbitmq
+      - mongodb
+    environment:
+      RABBITMQ_URL: amqp://user:password@rabbitmq
+      MONGO_URL: mongodb://user:password@mongodb:27017/reportsdb?authSource=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    # command: ["node", "index.js"]
+    command: ["npx", "nodemon", "--legacy-watch", "--ext", "js,json", "--watch", ".", "index.js"]
+  
+  scheduler-job:
+    build: .
+    # container_name: "scheduler-job"
+    depends_on:
+      - rabbitmq
+      - mongodb
+    environment:
+      RABBITMQ_URL: amqp://user:password@rabbitmq
+      MONGO_URL: mongodb://user:password@mongodb:27017/reportsdb?authSource=admin
+    volumes:
+      - .:/app
+    # command: ["node", "./jobs/reportSchedulerJob.js"]
+    command: ["npx", "nodemon", "--legacy-watch", "./jobs/reportSchedulerJob.js"]
+  generator-worker:
+    build: .
+    # container_name: "generator-worker"
+    depends_on:
+      - rabbitmq
+      - mongodb
+    environment:
+      RABBITMQ_URL: amqp://user:password@rabbitmq
+      MONGO_URL: mongodb://user:password@mongodb:27017/reportsdb?authSource=admin
+    volumes:
+      - .:/app
+    # command: ["node", "./workers/reportGenerationWorker.js"]
+    command: ["npx", "nodemon", "--legacy-watch", "./workers/reportGenerationWorker.js"]
+
+volumes:
+  rabbitmq_data:
+    driver: local
+  mongodb_data:
+    driver: local
