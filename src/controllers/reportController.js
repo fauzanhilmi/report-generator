@@ -50,15 +50,16 @@ exports.getReport = async (req, res) => {
 
 exports.cancelReport = async (req, res) => {
   try {
-    const report = await Report.findById(req.params.id); // TODO use report.findOneAndUpdate
-    if (!report)
-      return res.status(404).json({ message: "Report not found" });
-    if (report.status == "COMPLETED" || report.status == "CANCELED")
-      return res.status(400).json({ message: "Report already completed or canceled" });
+    const report = await Report.findOneAndUpdate(
+      { _id: req.params.id, status: { $nin: ["COMPLETED", "CANCELED"] } }, // Ensure only pending reports are canceled
+      { status: "CANCELED", updatedAt: new Date() },
+      { new: true }
+    );
 
-    report.status = "CANCELED";
-    report.updatedAt = new Date();
-    await report.save();
+    if (!report) {
+      return res.status(400).json({ message: "Cannot find pending report with given id" });
+    }
+
     res.json(report);
   } catch (error) {
     res.status(500).json({ error: error.message });
