@@ -101,7 +101,7 @@ Running multiple instances introduces risks of race conditions and concurrency i
 ### **Security & Best Practices**  
 - Move sensitive credentials (MongoDB, RabbitMQ, etc.) to `.env` file.  
 - Authenticate API calls.
-- Implement proper username / password authentication for MongoDB & RabbitMQ.  
+- Implement proper user authentication for MongoDB & RabbitMQ.  
 - Validate all API request bodies properly before processing.
 - Refactor the response body to exclude unnecessary MongoDB fields to make it more user-friendly.
 
